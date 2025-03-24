@@ -1,23 +1,139 @@
-<!-- templates/index.html -->
-
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Atomiclevel PDF Reducer :3</title>
+    <title>Atom PDF Size Reducer</title>
+    <style>
+        #progress-bar {
+            width: 0%;
+            height: 20px;
+            background-color: green;
+            transition: width 0.4s ease;
+        }
+        #progress-container {
+            width: 100%;
+            background-color: #ccc;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <h2>PDF File Reducer</h2>
-    <form method="post" enctype="multipart/form-data">
+    <h2>Atom PDF Size Reducer</h2>
+    <form id="pdf-form">
         <label>Select PDF file:</label><br>
-        <input type="file" name="pdf" accept=".pdf" required><br><br>
+        <input type="file" name="pdf" id="pdf-file" accept=".pdf" required><br>
+        <span id="file-info"></span><br><br>
 
-        <label>Choose compression level:</label><br>
-        <input type="radio" name="quality" value="best_compress" checked> Best Compress (Smallest size)<br>
-        <input type="radio" name="quality" value="default"> Default<br>
-        <input type="radio" name="quality" value="best_quality"> Best Quality (Larger file)<br><br>
+        <label>DPI (Resolution): <strong><span id="dpi-value">72</span></strong></label><br>
+        <input type="range" name="dpi" min="50" max="200" value="72" id="dpi-slider"><br><br>
 
-        <button type="submit">Start Explode!</button>
+        <label>JPEG Compression Quality: <strong><span id="quality-value">20</span></strong></label><br>
+        <input type="range" name="quality" min="10" max="100" value="20" id="quality-slider"><br><br>
+
+        <input type="checkbox" name="grayscale"> Convert to Grayscale<br><br>
+
+        <button type="submit">Estimate & Compress</button>
     </form>
+
+    <div id="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+
+    <div id="result" style="margin-top: 20px;"></div>
+
+    <hr style="margin-top: 40px;">
+
+<div id="user-guide" style="margin-top: 20px; max-width: 600px;">
+    <h3>📘 User Guide</h3>
+    <p><strong>DPI (Dots Per Inch):</strong> Controls the resolution of each page image. 
+        <br>- Lower DPI (e.g., <strong>72</strong>) = smaller file, lower quality.
+        <br>- Higher DPI (e.g., <strong>150+</strong>) = clearer output, but bigger file.</p>
+
+    <p><strong>JPEG Compression Quality:</strong> Controls how much image detail is preserved.
+        <br>- <strong>1-30:</strong> High compression, low quality (smaller file).
+        <br>- <strong>40-60:</strong> Balanced quality and size.
+        <br>- <strong>70-100:</strong> Higher quality, larger file.</p>
+
+    <p><strong>Tips:</strong>
+        <ul>
+            <li>For scanned PDFs or previews: try <strong>DPI 72</strong> and <strong>quality 20</strong>.</li>
+            <li>For readable output with decent size: <strong>DPI 96</strong> and <strong>quality 40-50</strong>.</li>
+            <li>Higher DPI is useful only if your PDF has small or detailed text/images.</li>
+        </ul>
+    </p>
+</div>
+
+
+    <script>
+        const form = document.getElementById('pdf-form');
+        const resultDiv = document.getElementById('result');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+        const fileInput = document.getElementById('pdf-file');
+        const fileInfo = document.getElementById('file-info');
+
+        const dpiSlider = document.getElementById('dpi-slider');
+        const dpiValue = document.getElementById('dpi-value');
+        dpiSlider.addEventListener('input', () => {
+            dpiValue.textContent = dpiSlider.value;
+        });
+
+        const qualitySlider = document.getElementById('quality-slider');
+        const qualityValue = document.getElementById('quality-value');
+        qualitySlider.addEventListener('input', () => {
+            qualityValue.textContent = qualitySlider.value;
+        });
+
+        fileInput.addEventListener('change', function () {
+            if (this.files.length > 0) {
+                const fileSizeMB = (this.files[0].size / 1024 / 1024).toFixed(2);
+                fileInfo.textContent = `Selected file size: ${fileSizeMB} MB`;
+            } else {
+                fileInfo.textContent = '';
+            }
+        });
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            resultDiv.innerHTML = "";
+            progressBar.style.width = '0%';
+            progressContainer.style.display = 'block';
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 5;
+                    progressBar.style.width = progress + '%';
+                }
+            }, 200);
+
+            const response = await fetch('/compress', {
+                method: 'POST',
+                body: formData
+            });
+
+            clearInterval(interval);
+            progressBar.style.width = '100%';
+
+            const data = await response.json();
+
+            if (response.ok) {
+                resultDiv.innerHTML = `
+                    ✅ <strong>Original size:</strong> ${data.original_size} MB<br>
+                    🔻 <strong>Estimated compressed size:</strong> ${data.estimated} MB<br><br>
+                    📥 <a href="${data.download_url}" download>Download Reduced PDF</a>
+                `;
+            } else {
+                resultDiv.innerHTML = `❌ Error: ${data.error || 'Something went wrong'}`;
+            }
+
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+                progressBar.style.width = '0%';
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
-
