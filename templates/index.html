@@ -1,0 +1,23 @@
+<!-- templates/index.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Atomiclevel PDF Reducer :3</title>
+</head>
+<body>
+    <h2>PDF File Reducer</h2>
+    <form method="post" enctype="multipart/form-data">
+        <label>Select PDF file:</label><br>
+        <input type="file" name="pdf" accept=".pdf" required><br><br>
+
+        <label>Choose compression level:</label><br>
+        <input type="radio" name="quality" value="best_compress" checked> Best Compress (Smallest size)<br>
+        <input type="radio" name="quality" value="default"> Default<br>
+        <input type="radio" name="quality" value="best_quality"> Best Quality (Larger file)<br><br>
+
+        <button type="submit">Start Explode!</button>
+    </form>
+</body>
+</html>
+
